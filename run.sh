@@ -6,6 +6,9 @@ if test "$#" -ne 1 -a "$#" -ne 2; then
 	exit 1
 fi
 
+echo -n "Press return to continue> "
+read
+
 
 NLOOPS="$1"
 INV="$2"
@@ -48,7 +51,7 @@ for i in `seq "$NLOOPS"`; do
 	else
 		URLS="$URLS2"
 	fi
-	echo ./main "$MAXSIZE" `cat "$URLS"`
+	./main "$MAXSIZE" `cat "$URLS"`
 	if test "$?" -ne 0; then
 		echo "error: main returned non-zero" >&2
 		break
