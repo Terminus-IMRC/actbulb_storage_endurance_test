@@ -171,6 +171,7 @@ static _Bool do_write(const int fd, struct chunk chunk)
 		error(__FILE__, __LINE__, "error: Short write\n");
 		return 1;
 	}
+
 	reti = fsync(fd);
 	if (reti == -1) {
 		error(__FILE__, __LINE__, "error: fsync: %s\n", strerror(errno));
@@ -271,19 +272,17 @@ int main(int argc, char *argv[])
 			goto cleanup;
 		gettimeofday(&end, NULL);
 
-		gettimeofday(&start, NULL);
+		printf("Write time(%d): %f [s]\n", i, (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6);
+		printf("Write speed(%d): %g [B/s]\n", i, chunk.size_written / ((end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6));
+
 		if (do_read(fd, chunk))
 			goto cleanup;
-		gettimeofday(&end, NULL);
 
 		reti = close(fd);
 		if (reti == -1) {
 			error(__FILE__, __LINE__, "error: close: %s\n", strerror(errno));
 			goto cleanup;
 		}
-
-		printf("Write time(%d): %f [s]\n", i, (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6);
-		printf("Write speed(%d): %g [B/s]\n", i, chunk.size_written / ((end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6));
 	}
 
 cleanup:
