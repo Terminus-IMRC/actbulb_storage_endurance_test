@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <libgen.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -33,6 +34,16 @@ struct chunk {
 	uint8_t *buf;
 };
 
+static void error(const char *file, const int line, const char *fmt, ...)
+{
+	va_list ap;
+
+	fprintf(stderr, "%s:%d: ", file, line);
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+}
+
 static void usage(FILE *outfp, const char *progname)
 {
 	fprintf(outfp, "Usage: %s MAX_SIZE FILES_TO_DOWNLOAD...\n", progname);
@@ -43,39 +54,39 @@ static void process_args(size_t *max_size, uint8_t **buf, int *nurls, char ***ur
 	int i;
 
 	if (argc < 3) {
-		fprintf(stderr, "%s: error: Insufficient the number of the arguments\n", argv[0]);
+		error(__FILE__, __LINE__, "error: Insufficient the number of the arguments\n");
 		usage(stderr, argv[0]);
 		exit(EXIT_FAILURE);
 	}
 
 	*max_size = atoi(argv[1]);
 	if ((*buf = malloc(*max_size)) == NULL) {
-		fprintf(stderr, "%s: error: Failed to allocate buffer of %lu bytes", argv[0], *max_size);
+		error(__FILE__, __LINE__, "error: Failed to allocate buffer of %lu bytes", *max_size);
 		exit(EXIT_FAILURE);
 	}
 
 	*nurls = argc - 2;
 	if ((*urls = malloc(*nurls * sizeof(char*))) == NULL) {
-		fprintf(stderr, "%s: error: Failed to allocate urls buffer of %d elements", argv[0], *nurls);
+		error(__FILE__, __LINE__, "error: Failed to allocate urls buffer of %d elements", *nurls);
 		exit(EXIT_FAILURE);
 	}
 	if ((*basenames = malloc(*nurls * sizeof(char*))) == NULL) {
-		fprintf(stderr, "%s: error: Failed to allocate basenames buffer of %d elements", argv[0], *nurls);
+		error(__FILE__, __LINE__, "error: Failed to allocate basenames buffer of %d elements", *nurls);
 		exit(EXIT_FAILURE);
 	}
 
 	for (i = 0; i < *nurls; i ++) {
 		char *p = argv[i + 2], *q = NULL;
 		if (((*urls)[i] = strdup(p)) == NULL) {
-			fprintf(stderr, "%s: strdup: %s\n", argv[0], strerror(errno));
+			error(__FILE__, __LINE__, "strdup: %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 		if ((q = basename(p)) == NULL) {
-			fprintf(stderr, "%s: basename: %s\n", argv[0], strerror(errno));
+			error(__FILE__, __LINE__, "basename: %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 		if (((*basenames)[i] = strdup(q)) == NULL) {
-			fprintf(stderr, "%s: strdup: %s\n", argv[0], strerror(errno));
+			error(__FILE__, __LINE__, "strdup: %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -91,7 +102,7 @@ size_t download_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
 		return 0;
 
 	if (chunk->size_written + realsize > chunk->size) {
-		fprintf(stderr, "error: size_written(%lu) + realsize(%lu) > size(%lu)\n", chunk->size_written, realsize, chunk->size);
+		error(__FILE__, __LINE__, "error: size_written(%lu) + realsize(%lu) > size(%lu)\n", chunk->size_written, realsize, chunk->size);
 		writesize = chunk->size - chunk->size_written;
 	} else
 		writesize = realsize;
@@ -103,7 +114,7 @@ size_t download_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
 	return writesize;
 }
 
-static _Bool download(const char *url_arg, struct chunk *chunkp, const char *progname)
+static _Bool download(const char *url_arg, struct chunk *chunkp)
 {
 	CURL *curl_handle;
 	CURLcode ret;
@@ -116,25 +127,25 @@ static _Bool download(const char *url_arg, struct chunk *chunkp, const char *pro
 	url = strdup(url_arg);
 	ret = curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 	if (ret != CURLE_OK) {
-		fprintf(stderr, "%s: curl_easy_setopt: CURLOPT_URL: %s\n", progname, curl_easy_strerror(ret));
+		error(__FILE__, __LINE__, "curl_easy_setopt: CURLOPT_URL: %s\n", curl_easy_strerror(ret));
 		goto cleanup;
 	}
 
 	ret = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, download_callback);
 	if (ret != CURLE_OK) {
-		fprintf(stderr, "%s: curl_easy_setopt: CURLOPT_WRITEFUNCTION: %s\n", progname, curl_easy_strerror(ret));
+		error(__FILE__, __LINE__, "curl_easy_setopt: CURLOPT_WRITEFUNCTION: %s\n", curl_easy_strerror(ret));
 		goto cleanup;
 	}
 
 	ret = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*) chunkp);
 	if (ret != CURLE_OK) {
-		fprintf(stderr, "%s: curl_easy_setopt: CURLOPT_WRITEDATA: %s\n", progname, curl_easy_strerror(ret));
+		error(__FILE__, __LINE__, "curl_easy_setopt: CURLOPT_WRITEDATA: %s\n", curl_easy_strerror(ret));
 		goto cleanup;
 	}
 
 	ret = curl_easy_perform(curl_handle);
 	if (ret != CURLE_OK) {
-		fprintf(stderr, "%s: curl_easy_perform: %s\n", progname, curl_easy_strerror(ret));
+		error(__FILE__, __LINE__, "curl_easy_perform: %s\n", curl_easy_strerror(ret));
 		goto cleanup;
 	}
 
@@ -147,12 +158,82 @@ cleanup:
 	return toret;
 }
 
+static _Bool do_write(const int fd, struct chunk chunk)
+{
+	int reti;
+	ssize_t retss;
+
+	retss = write(fd, chunk.buf, chunk.size_written);
+	if (retss == -1) {
+		error(__FILE__, __LINE__, "error: write: %s\n", strerror(errno));
+		return 1;
+	} else if ((size_t) retss != chunk.size_written) {
+		error(__FILE__, __LINE__, "error: Short write\n");
+		return 1;
+	}
+	reti = fsync(fd);
+	if (reti == -1) {
+		error(__FILE__, __LINE__, "error: fsync: %s\n", strerror(errno));
+		return 1;
+	}
+
+	return 0;
+}
+
+static _Bool do_read(const int fd, struct chunk chunk)
+{
+	size_t i;
+	uint8_t buf[1<<18]; /* Must not be greater than the stack size! */
+	ssize_t lastsize;
+	off_t reto;
+	ssize_t retss;
+
+	reto = lseek(fd, 0, SEEK_SET);
+	if (reto == -1) {
+		error(__FILE__, __LINE__, "error: lseek: %s\n", strerror(errno));
+		return 1;
+	}
+
+	for (i = 0; i < chunk.size_written / sizeof(buf); i ++) {
+		retss = read(fd, buf, sizeof(buf));
+		if (retss == -1) {
+			error(__FILE__, __LINE__, "error: read: %s\n", strerror(errno));
+			return 1;
+		} else if (retss != sizeof(buf)) {
+			error(__FILE__, __LINE__, "error: Short read\n");
+			return 1;
+		}
+		if (memcmp(buf, &(chunk.buf[sizeof(buf) * i]), sizeof(buf))) {
+			error(__FILE__, __LINE__, "Contents mismatch at i=%lu\n", i);
+			return 1;
+		}
+	}
+
+	/* Or sizeof(buf) * i - chunk.size_written */
+	lastsize = 	chunk.size_written % sizeof(buf);
+	retss = read(fd, buf, lastsize);
+	if (retss == -1) {
+		error(__FILE__, __LINE__, "error: read: %s\n", strerror(errno));
+		return 1;
+	} else if (retss != lastsize) {
+		error(__FILE__, __LINE__, "error: Short read (retss(%lu) != lastsize(%lu))\n", retss, lastsize);
+		return 1;
+	}
+	if (memcmp(buf, &(chunk.buf[sizeof(buf) * i]), lastsize)) {
+		error(__FILE__, __LINE__, "Contents mismatch at i=%lu\n", i);
+		return 1;
+	}
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	int i;
 	int nurls = 0;
 	char **urls = NULL, **basenames = NULL;
 	struct chunk chunk;
+	int reti;
 
 	process_args(&chunk.size, &chunk.buf, &nurls, &urls, &basenames, argc, argv);
 
@@ -167,49 +248,37 @@ int main(int argc, char *argv[])
 	for (i = 0; i < nurls; i ++) {
 		int fd;
 		struct timeval start, end;
-		int reti;
-		_Bool retb;
-		ssize_t retss;
 
 		chunk.size_written = 0;
 
 		gettimeofday(&start, NULL);
-		retb = download(urls[i], &chunk, argv[0]);
-		if (retb) {
-			fprintf(stderr, "%s: error: download\n", argv[0]);
+		if (download(urls[i], &chunk))
 			goto cleanup;
-		}
 		gettimeofday(&end, NULL);
 
 		printf("chunk.size_written(%d): %lu [B]\n", i, chunk.size_written);
 		printf("Download time(%d): %f [s]\n", i, (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6);
 		printf("Download speed(%d): %g [B/s]\n", i, chunk.size_written / ((end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6));
 
-		fd = open("/dev/null", O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+		fd = open(basenames[i], O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
 		if (fd == -1) {
-			fprintf(stderr, "error: open: %s\n", strerror(errno));
+			error(__FILE__, __LINE__, "error: open: %s\n", strerror(errno));
 			goto cleanup;
 		}
 
 		gettimeofday(&start, NULL);
-		retss = write(fd, chunk.buf, chunk.size_written);
-		if (retss == -1) {
-			fprintf(stderr, "error: write: %s\n", strerror(errno));
+		if (do_write(fd, chunk))
 			goto cleanup;
-		} else if ((size_t) retss != chunk.size_written) {
-			fprintf(stderr, "error: Short write\n");
+		gettimeofday(&end, NULL);
+
+		gettimeofday(&start, NULL);
+		if (do_read(fd, chunk))
 			goto cleanup;
-		}
-		reti = fsync(fd);
-		if (reti == -1) {
-			fprintf(stderr, "error: fsync: %s\n", strerror(errno));
-			goto cleanup;
-		}
 		gettimeofday(&end, NULL);
 
 		reti = close(fd);
 		if (reti == -1) {
-			fprintf(stderr, "error: close: %s\n", strerror(errno));
+			error(__FILE__, __LINE__, "error: close: %s\n", strerror(errno));
 			goto cleanup;
 		}
 
@@ -217,9 +286,7 @@ int main(int argc, char *argv[])
 		printf("Write speed(%d): %g [B/s]\n", i, chunk.size_written / ((end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6));
 	}
 
-
 cleanup:
-
 	for (i = 0; i < nurls; i ++) {
 		free(basenames[i]);
 		free(urls[i]);
