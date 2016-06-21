@@ -61,17 +61,17 @@ static void process_args(size_t *max_size, uint8_t **buf, int *nurls, char ***ur
 
 	*max_size = atoi(argv[1]);
 	if ((*buf = malloc(*max_size)) == NULL) {
-		error(__FILE__, __LINE__, "error: Failed to allocate buffer of %lu bytes", *max_size);
+		error(__FILE__, __LINE__, "error: Failed to allocate buffer of %zu bytes\n", *max_size);
 		exit(EXIT_FAILURE);
 	}
 
 	*nurls = argc - 2;
 	if ((*urls = malloc(*nurls * sizeof(char*))) == NULL) {
-		error(__FILE__, __LINE__, "error: Failed to allocate urls buffer of %d elements", *nurls);
+		error(__FILE__, __LINE__, "error: Failed to allocate urls buffer of %d elements\n", *nurls);
 		exit(EXIT_FAILURE);
 	}
 	if ((*basenames = malloc(*nurls * sizeof(char*))) == NULL) {
-		error(__FILE__, __LINE__, "error: Failed to allocate basenames buffer of %d elements", *nurls);
+		error(__FILE__, __LINE__, "error: Failed to allocate basenames buffer of %d elements\n", *nurls);
 		exit(EXIT_FAILURE);
 	}
 
@@ -102,7 +102,7 @@ size_t download_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
 		return 0;
 
 	if (chunk->size_written + realsize > chunk->size) {
-		error(__FILE__, __LINE__, "error: size_written(%lu) + realsize(%lu) > size(%lu)\n", chunk->size_written, realsize, chunk->size);
+		error(__FILE__, __LINE__, "error: size_written(%zu) + realsize(%zu) > size(%zu)\n", chunk->size_written, realsize, chunk->size);
 		writesize = chunk->size - chunk->size_written;
 	} else
 		writesize = realsize;
@@ -205,7 +205,7 @@ static _Bool do_verify(const int fd, struct chunk chunk)
 			return 1;
 		}
 		if (memcmp(buf, &(chunk.buf[sizeof(buf) * i]), sizeof(buf))) {
-			error(__FILE__, __LINE__, "Contents mismatch at i=%lu\n", i);
+			error(__FILE__, __LINE__, "Contents mismatch at i=%zu\n", i);
 			return 1;
 		}
 	}
@@ -217,11 +217,11 @@ static _Bool do_verify(const int fd, struct chunk chunk)
 		error(__FILE__, __LINE__, "error: read: %s\n", strerror(errno));
 		return 1;
 	} else if (retss != lastsize) {
-		error(__FILE__, __LINE__, "error: Short read (retss(%lu) != lastsize(%lu))\n", retss, lastsize);
+		error(__FILE__, __LINE__, "error: Short read (retss(%zs) != lastsize(%zs))\n", retss, lastsize);
 		return 1;
 	}
 	if (memcmp(buf, &(chunk.buf[sizeof(buf) * i]), lastsize)) {
-		error(__FILE__, __LINE__, "Contents mismatch at i=%lu\n", i);
+		error(__FILE__, __LINE__, "Contents mismatch at i=%zu\n", i);
 		return 1;
 	}
 
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 
 	process_args(&chunk.size, &chunk.buf, &nurls, &urls, &basenames, argc, argv);
 
-	printf("chunk.size = %lu\n", chunk.size);
+	printf("chunk.size = %zu\n", chunk.size);
 	printf("chunk.buf = %p\n", (void*) chunk.buf);
 	printf("nurls = %d\n", nurls);
 	for (i = 0; i < nurls; i ++) {
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
 			goto cleanup;
 		gettimeofday(&end, NULL);
 
-		printf("chunk.size_written(%d): %lu [B]\n", i, chunk.size_written);
+		printf("chunk.size_written(%d): %zu [B]\n", i, chunk.size_written);
 		printf("Download time(%d): %f [s]\n", i, (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6);
 		printf("Download speed(%d): %g [B/s]\n", i, chunk.size_written / ((end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6));
 		fflush(stdout);
