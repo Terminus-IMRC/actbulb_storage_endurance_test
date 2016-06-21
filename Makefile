@@ -1,4 +1,4 @@
-CFLAGS := -Wall -Wextra -O2 -ansi -pedantic
+CFLAGS := -Wall -Wextra -O2
 LDFLAGS := -lcurl
 
 RM := rm -f
