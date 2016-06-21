@@ -181,7 +181,7 @@ static _Bool do_write(const int fd, struct chunk chunk)
 	return 0;
 }
 
-static _Bool do_read(const int fd, struct chunk chunk)
+static _Bool do_verify(const int fd, struct chunk chunk)
 {
 	size_t i;
 	uint8_t buf[1<<18]; /* Must not be greater than the stack size! */
@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
 		printf("Write time(%d): %f [s]\n", i, (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6);
 		printf("Write speed(%d): %g [B/s]\n", i, chunk.size_written / ((end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6));
 
-		if (do_read(fd, chunk))
+		if (do_verify(fd, chunk))
 			goto cleanup;
 
 		reti = close(fd);
