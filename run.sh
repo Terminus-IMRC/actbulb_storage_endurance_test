@@ -57,7 +57,7 @@ for i in `seq "$NLOOPS"`; do
 	else
 		URLS="$URLS2"
 	fi
-	./main "$MAXSIZE" `cat "$URLS"`
+	./main "$MAXSIZE" `cat "$URLS" | shuf`
 	if test "$?" -ne 0; then
 		echo "error: main returned non-zero" >&2
 		break
