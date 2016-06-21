@@ -42,10 +42,16 @@ END
 
 
 LOCKFILE="$(mktemp)"
+LOG="log/$(date '+%Y:%m:%d-%H:%M:%S')"
 
+mkdir -p log
+
+(
 echo "Running tests for $NLOOPS times"
 echo "Remove $LOCKFILE to stop them"
 for i in `seq "$NLOOPS"`; do
+	date
+	echo "i = $i"
 	if test "$((i % 2))" -eq 1; then
 		URLS="$URLS1"
 	else
@@ -61,5 +67,7 @@ for i in `seq "$NLOOPS"`; do
 		break
 	fi
 done
+date
+) 2>&1 | tee "$LOG"
 
 rm -f "$LOCKFILE"

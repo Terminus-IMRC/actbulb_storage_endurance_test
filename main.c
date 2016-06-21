@@ -245,6 +245,7 @@ int main(int argc, char *argv[])
 		printf("urls[%d] = %s\n", i, urls[i]);
 		printf("basenames[%d] = %s\n", i, basenames[i]);
 	}
+	fflush(stdout);
 
 	for (i = 0; i < nurls; i ++) {
 		int fd;
@@ -260,6 +261,7 @@ int main(int argc, char *argv[])
 		printf("chunk.size_written(%d): %lu [B]\n", i, chunk.size_written);
 		printf("Download time(%d): %f [s]\n", i, (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6);
 		printf("Download speed(%d): %g [B/s]\n", i, chunk.size_written / ((end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6));
+		fflush(stdout);
 
 		fd = open(basenames[i], O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
 		if (fd == -1) {
@@ -274,6 +276,7 @@ int main(int argc, char *argv[])
 
 		printf("Write time(%d): %f [s]\n", i, (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6);
 		printf("Write speed(%d): %g [B/s]\n", i, chunk.size_written / ((end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6));
+		fflush(stdout);
 
 		if (do_verify(fd, chunk))
 			goto cleanup;

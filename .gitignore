@@ -1,5 +1,8 @@
-.*.swp
 main
 main.o
+
 urls1.txt
 urls2.txt
+log/
+
+.*.swp
