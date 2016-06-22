@@ -34,8 +34,6 @@ http://192.168.11.200/~imrc/sd_movie/out4-1
 http://192.168.11.200/~imrc/sd_movie/out4-2
 http://192.168.11.200/~imrc/sd_movie/out5-1
 http://192.168.11.200/~imrc/sd_movie/out5-2
-http://192.168.11.200/~imrc/sd_movie/out6-1
-http://192.168.11.200/~imrc/sd_movie/out6-2
 END
 
 cat <<END >"urls2.txt"
@@ -49,8 +47,6 @@ http://192.168.11.200/~imrc/sd_movie/out4-1i
 http://192.168.11.200/~imrc/sd_movie/out4-2i
 http://192.168.11.200/~imrc/sd_movie/out5-1i
 http://192.168.11.200/~imrc/sd_movie/out5-2i
-http://192.168.11.200/~imrc/sd_movie/out6-1i
-http://192.168.11.200/~imrc/sd_movie/out6-2i
 END
 
 clean_files() {
