@@ -9,7 +9,7 @@ main: main.o
 
 invert: invert.o
 
-.PHONY:
+.PHONY: clean
 clean:
 	$(RM) invert
 	$(RM) main
