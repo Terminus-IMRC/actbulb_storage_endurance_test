@@ -1,10 +1,10 @@
-CFLAGS := -Wall -Wextra -O2
-LDFLAGS := -lcurl
+CFLAGS += -Wall -Wextra -O2
 
 RM := rm -f
 
 all: main invert
 
+main: LDFLAGS += -lcurl
 main: main.o
 
 invert: invert.o
