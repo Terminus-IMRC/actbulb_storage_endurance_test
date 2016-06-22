@@ -13,7 +13,7 @@ read
 NLOOPS="$1"
 INV="$2"
 
-MAXSIZE=766213793
+MAXSIZE=260772658
 
 if test -z "$INV"; then
 	URLS1="urls1.txt"
@@ -24,21 +24,38 @@ else
 fi
 
 cat <<END >"urls1.txt"
-http://192.168.11.200/~imrc/sd_movie/out1
-http://192.168.11.200/~imrc/sd_movie/out2
-http://192.168.11.200/~imrc/sd_movie/out3
-http://192.168.11.200/~imrc/sd_movie/out4
-http://192.168.11.200/~imrc/sd_movie/out5
-http://192.168.11.200/~imrc/sd_movie/out6
+http://192.168.11.200/~imrc/sd_movie/out1-1
+http://192.168.11.200/~imrc/sd_movie/out1-2
+http://192.168.11.200/~imrc/sd_movie/out2-1
+http://192.168.11.200/~imrc/sd_movie/out2-2
+http://192.168.11.200/~imrc/sd_movie/out3-1
+http://192.168.11.200/~imrc/sd_movie/out3-2
+http://192.168.11.200/~imrc/sd_movie/out4-1
+http://192.168.11.200/~imrc/sd_movie/out4-2
+http://192.168.11.200/~imrc/sd_movie/out5-1
+http://192.168.11.200/~imrc/sd_movie/out5-2
+http://192.168.11.200/~imrc/sd_movie/out6-1
+http://192.168.11.200/~imrc/sd_movie/out6-2
 END
 
 cat <<END >"urls2.txt"
-http://192.168.11.200/~imrc/sd_movie/out1i
-http://192.168.11.200/~imrc/sd_movie/out2i
-http://192.168.11.200/~imrc/sd_movie/out3i
-http://192.168.11.200/~imrc/sd_movie/out4i
-http://192.168.11.200/~imrc/sd_movie/out5i
+http://192.168.11.200/~imrc/sd_movie/out1-1i
+http://192.168.11.200/~imrc/sd_movie/out1-2i
+http://192.168.11.200/~imrc/sd_movie/out2-1i
+http://192.168.11.200/~imrc/sd_movie/out2-2i
+http://192.168.11.200/~imrc/sd_movie/out3-1i
+http://192.168.11.200/~imrc/sd_movie/out3-2i
+http://192.168.11.200/~imrc/sd_movie/out4-1i
+http://192.168.11.200/~imrc/sd_movie/out4-2i
+http://192.168.11.200/~imrc/sd_movie/out5-1i
+http://192.168.11.200/~imrc/sd_movie/out5-2i
+http://192.168.11.200/~imrc/sd_movie/out6-1i
+http://192.168.11.200]/~imrc/sd_movie/out6-2i
 END
+
+clean_files() {
+	rm -f out*-*
+}
 
 
 LOCKFILE="$(mktemp)"
@@ -52,6 +69,8 @@ echo "Remove $LOCKFILE to stop them"
 for i in `seq "$NLOOPS"`; do
 	date
 	echo "i = $i"
+	clean_files
+	sync; sync; sync
 	if test "$((i % 2))" -eq 1; then
 		URLS="$URLS1"
 	else
