@@ -50,7 +50,7 @@ http://192.168.11.200/~imrc/sd_movie/out4-2i
 http://192.168.11.200/~imrc/sd_movie/out5-1i
 http://192.168.11.200/~imrc/sd_movie/out5-2i
 http://192.168.11.200/~imrc/sd_movie/out6-1i
-http://192.168.11.200]/~imrc/sd_movie/out6-2i
+http://192.168.11.200/~imrc/sd_movie/out6-2i
 END
 
 clean_files() {
