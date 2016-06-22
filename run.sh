@@ -82,6 +82,7 @@ for i in `seq "$NLOOPS"`; do
 		break
 	fi
 done
+clean_files
 date
 ) 2>&1 | tee "$LOG"
 
