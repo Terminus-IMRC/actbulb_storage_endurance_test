@@ -1,6 +1,9 @@
 main
 main.o
 
+invert
+invert.o
+
 urls1.txt
 urls2.txt
 log/
