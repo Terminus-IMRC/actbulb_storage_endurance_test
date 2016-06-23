@@ -32,8 +32,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <curl/curl.h>
-#include <openssl/sha.h>
 #include <errno.h>
+
+#include <openssl/md4.h>
+#define HASH_LENGTH MD4_DIGEST_LENGTH
+#define HASH_FUNC MD4
 
 struct chunk {
 	size_t size;
@@ -206,7 +209,7 @@ static _Bool do_read(const int fd, struct chunk chunk)
 
 static void calc_hash(unsigned char *md, struct chunk chunk)
 {
-	SHA512(chunk.buf, chunk.size_written, md);
+	HASH_FUNC(chunk.buf, chunk.size_written, md);
 }
 
 int main(int argc, char *argv[])
@@ -231,7 +234,7 @@ int main(int argc, char *argv[])
 	for (i = 0; i < nurls; i ++) {
 		int fd;
 		struct timeval start, end;
-		unsigned char md_write[SHA512_DIGEST_LENGTH], md_read[SHA512_DIGEST_LENGTH];
+		unsigned char md_write[HASH_LENGTH], md_read[HASH_LENGTH];
 		off_t reto;
 
 		chunk.size_written = 0;
