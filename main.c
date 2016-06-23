@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
 
 		gettimeofday(&start, NULL);
 		if (download(urls[i], &chunk))
-			goto cleanup;
+			exit(EXIT_FAILURE);
 		gettimeofday(&end, NULL);
 
 		printf("chunk.size_written(%d): %zu [B]\n", i, chunk.size_written);
@@ -252,12 +252,12 @@ int main(int argc, char *argv[])
 		fd = open(basenames[i], O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
 		if (fd == -1) {
 			error(__FILE__, __LINE__, "error: open: %s\n", strerror(errno));
-			goto cleanup;
+			exit(EXIT_FAILURE);
 		}
 
 		gettimeofday(&start, NULL);
 		if (do_write(fd, chunk))
-			goto cleanup;
+			exit(EXIT_FAILURE);
 		gettimeofday(&end, NULL);
 
 		printf("Write time(%d): %f [s]\n", i, (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6);
@@ -269,12 +269,12 @@ int main(int argc, char *argv[])
 		reto = lseek(fd, 0, SEEK_SET);
 		if (reto == -1) {
 			error(__FILE__, __LINE__, "error: lseek: %s\n", strerror(errno));
-			goto cleanup;
+			exit(EXIT_FAILURE);
 		}
 
 		gettimeofday(&start, NULL);
 		if (do_read(fd, chunk))
-			goto cleanup;
+			exit(EXIT_FAILURE);
 		gettimeofday(&end, NULL);
 
 		printf("Read time(%d): %f [s]\n", i, (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6);
@@ -285,17 +285,16 @@ int main(int argc, char *argv[])
 
 		if (memcmp(md_write, md_read, sizeof(md_write))) {
 			error(__FILE__, __LINE__, "error: write hash and read hash differ\n");
-			goto cleanup;
+			exit(EXIT_FAILURE);
 		}
 
 		reti = close(fd);
 		if (reti == -1) {
 			error(__FILE__, __LINE__, "error: close: %s\n", strerror(errno));
-			goto cleanup;
+			exit(EXIT_FAILURE);
 		}
 	}
 
-cleanup:
 	for (i = 0; i < nurls; i ++) {
 		free(basenames[i]);
 		free(urls[i]);
