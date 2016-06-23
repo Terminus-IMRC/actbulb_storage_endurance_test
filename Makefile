@@ -4,7 +4,7 @@ RM := rm -f
 
 all: main invert
 
-main: LDFLAGS += -lcurl
+main: LDFLAGS += -lcurl -lcrypto
 main: main.o
 
 invert: invert.o

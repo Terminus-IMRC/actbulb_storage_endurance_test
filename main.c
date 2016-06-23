@@ -32,6 +32,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <curl/curl.h>
+#include <openssl/sha.h>
 #include <errno.h>
 
 struct chunk {
@@ -174,7 +175,7 @@ static _Bool do_write(const int fd, struct chunk chunk)
 		error(__FILE__, __LINE__, "error: write: %s\n", strerror(errno));
 		return 1;
 	} else if ((size_t) retss != chunk.size_written) {
-		error(__FILE__, __LINE__, "error: Short write\n");
+		error(__FILE__, __LINE__, "error: Short or extra write\n");
 		return 1;
 	}
 
@@ -187,51 +188,25 @@ static _Bool do_write(const int fd, struct chunk chunk)
 	return 0;
 }
 
-static _Bool do_verify(const int fd, struct chunk chunk)
+static _Bool do_read(const int fd, struct chunk chunk)
 {
-	size_t i;
-	uint8_t buf[1<<18]; /* Must not be greater than the stack size! */
-	ssize_t lastsize;
-	off_t reto;
 	ssize_t retss;
 
-	reto = lseek(fd, 0, SEEK_SET);
-	if (reto == -1) {
-		error(__FILE__, __LINE__, "error: lseek: %s\n", strerror(errno));
-		return 1;
-	}
-
-	for (i = 0; i < chunk.size_written / sizeof(buf); i ++) {
-		retss = read(fd, buf, sizeof(buf));
-		if (retss == -1) {
-			error(__FILE__, __LINE__, "error: read: %s\n", strerror(errno));
-			return 1;
-		} else if (retss != sizeof(buf)) {
-			error(__FILE__, __LINE__, "error: Short read\n");
-			return 1;
-		}
-		if (memcmp(buf, &(chunk.buf[sizeof(buf) * i]), sizeof(buf))) {
-			error(__FILE__, __LINE__, "Contents mismatch at i=%zu\n", i);
-			return 1;
-		}
-	}
-
-	/* Or sizeof(buf) * i - chunk.size_written */
-	lastsize = 	chunk.size_written % sizeof(buf);
-	retss = read(fd, buf, lastsize);
+	retss = read(fd, chunk.buf, chunk.size_written);
 	if (retss == -1) {
 		error(__FILE__, __LINE__, "error: read: %s\n", strerror(errno));
 		return 1;
-	} else if (retss != lastsize) {
-		error(__FILE__, __LINE__, "error: Short read (retss(%zs) != lastsize(%zs))\n", retss, lastsize);
-		return 1;
-	}
-	if (memcmp(buf, &(chunk.buf[sizeof(buf) * i]), lastsize)) {
-		error(__FILE__, __LINE__, "Contents mismatch at i=%zu\n", i);
+	} else if ((size_t) retss != chunk.size_written) {
+		error(__FILE__, __LINE__, "error: Short or extra read\n");
 		return 1;
 	}
 
 	return 0;
+}
+
+static void calc_hash(unsigned char *md, struct chunk chunk)
+{
+	SHA512(chunk.buf, chunk.size_written, md);
 }
 
 int main(int argc, char *argv[])
@@ -256,6 +231,8 @@ int main(int argc, char *argv[])
 	for (i = 0; i < nurls; i ++) {
 		int fd;
 		struct timeval start, end;
+		unsigned char md_write[SHA512_DIGEST_LENGTH], md_read[SHA512_DIGEST_LENGTH];
+		off_t reto;
 
 		chunk.size_written = 0;
 
@@ -284,8 +261,29 @@ int main(int argc, char *argv[])
 		printf("Write speed(%d): %g [B/s]\n", i, chunk.size_written / ((end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6));
 		fflush(stdout);
 
-		if (do_verify(fd, chunk))
+		calc_hash(md_write, chunk);
+
+		reto = lseek(fd, 0, SEEK_SET);
+		if (reto == -1) {
+			error(__FILE__, __LINE__, "error: lseek: %s\n", strerror(errno));
 			goto cleanup;
+		}
+
+		gettimeofday(&start, NULL);
+		if (do_read(fd, chunk))
+			goto cleanup;
+		gettimeofday(&end, NULL);
+
+		printf("Read time(%d): %f [s]\n", i, (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6);
+		printf("Read speed(%d): %g [B/s]\n", i, chunk.size_written / ((end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6));
+		fflush(stdout);
+
+		calc_hash(md_read, chunk);
+
+		if (memcmp(md_write, md_read, sizeof(md_write))) {
+			error(__FILE__, __LINE__, "error: write hash and read hash differ\n");
+			goto cleanup;
+		}
 
 		reti = close(fd);
 		if (reti == -1) {
