@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#include <openssl/mdc2.h>
 #include <openssl/md4.h>
 #include <openssl/md5.h>
 #include <openssl/ripemd.h>
@@ -17,11 +16,6 @@ static void crypto_bench(const char *name, void (*testfunc)(const unsigned char 
 	gettimeofday(&end, NULL);
 
 	printf("%s: %f [s]\n", name, (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6);
-}
-
-static void mdc2_test(const unsigned char *d, const size_t n)
-{
-	MDC2(d, n, NULL);
 }
 
 static void md4_test(const unsigned char *d, const size_t n)
@@ -71,7 +65,7 @@ static void whirlpool_test(const unsigned char *d, const size_t n)
 
 int main()
 {
-	const size_t n = 100e6;
+	const size_t n = 260e6;
 
 	unsigned char *d;
 
@@ -81,7 +75,6 @@ int main()
 		exit(EXIT_FAILURE);
 	}
 
-	crypto_bench("MDC2     ", mdc2_test, d, n);
 	crypto_bench("MD4      ", md4_test, d, n);
 	crypto_bench("MD5      ", md5_test, d, n);
 	crypto_bench("RIPEMD160", ripemd160_test, d, n);
