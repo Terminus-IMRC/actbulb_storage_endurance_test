@@ -4,6 +4,9 @@ main.o
 invert
 invert.o
 
+crypto_bench
+crypto_bench.o
+
 urls1.txt
 urls2.txt
 log/

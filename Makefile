@@ -2,12 +2,15 @@ CFLAGS += -Wall -Wextra -O2
 
 RM := rm -f
 
-all: main invert
+all: main invert crypto_bench
 
 main: LDFLAGS += -lcurl -lcrypto
 main: main.o
 
 invert: invert.o
+
+crypto_bench: LDFLAGS += -lcrypto
+crypto_bench: crypto_bench.o
 
 .PHONY: clean
 clean:
