@@ -22,3 +22,6 @@ clean:
 	$(RM) main.o
 	$(RM) urls2.txt
 	$(RM) urls1.txt
+	$(RM) result2.pdf
+	$(RM) result1.pdf
+	$(RM) result.txt
